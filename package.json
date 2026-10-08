@@ -1,0 +1,17 @@
+{
+  "name": "jcink-emojis",
+  "version": "1.0.0",
+  "description": "Generate categorized emoji JSON from Unicode emoji-test.txt",
+  "main": "index.js",
+  "scripts": {
+    "generate": "node generate.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

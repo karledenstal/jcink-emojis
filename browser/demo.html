@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emoji search</title>
+  <style>
+    body { max-width: 56rem; margin: 3rem auto; padding: 0 1rem; font: 1rem/1.5 system-ui, sans-serif; }
+    .controls { display: flex; flex-wrap: wrap; gap: 1rem; }
+    label { display: grid; gap: .3rem; }
+    input, select { font: inherit; padding: .5rem; }
+    #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .75rem; padding: 0; list-style: none; }
+    #results li { border: 1px solid #ccc; border-radius: .5rem; padding: .75rem; text-align: center; }
+    .emoji { display: block; font-size: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Emoji search</h1>
+  <div class="controls">
+    <label>Search <input id="query" type="search" placeholder="Try thumbs up" disabled></label>
+    <label>Skin tone
+      <select id="tone" disabled>
+        <option value="">Default</option>
+        <option value="light">Light</option>
+        <option value="medium-light">Medium-light</option>
+        <option value="medium">Medium</option>
+        <option value="medium-dark">Medium-dark</option>
+        <option value="dark">Dark</option>
+      </select>
+    </label>
+  </div>
+  <p id="status" role="status" aria-live="polite">Loading emojis…</p>
+  <ul id="results" aria-label="Emoji search results"></ul>
+  <script src="./emoji.js"></script>
+  <script>
+    const query = document.getElementById('query');
+    const tone = document.getElementById('tone');
+    const status = document.getElementById('status');
+    const results = document.getElementById('results');
+
+    function render() {
+      const matches = Emoji.search(query.value, tone.value || null, { limit: 50 });
+      results.replaceChildren();
+      for (const match of matches) {
+        const item = document.createElement('li');
+        const glyph = document.createElement('span');
+        glyph.className = 'emoji';
+        glyph.textContent = match.emoji;
+        const name = document.createElement('span');
+        name.textContent = match.name;
+        item.append(glyph, name);
+        results.append(item);
+      }
+      status.textContent = matches.length ? `Showing ${matches.length} results (up to 50).` : 'No matching emojis.';
+    }
+
+    async function setup() {
+      try {
+        // Replace this URL with the location of your uploaded JSON file.
+        await Emoji.init('../emojis.json');
+        query.disabled = false;
+        tone.disabled = false;
+        query.addEventListener('input', render);
+        tone.addEventListener('change', render);
+        render();
+      } catch (error) {
+        status.textContent = `Could not load emojis: ${error.message}`;
+      }
+    }
+    setup();
+  </script>
+</body>
+</html>
