@@ -13,14 +13,16 @@ function annotationIndex(annotations, derived) {
       throw new Error(`Invalid CLDR ${root}: expected nonempty English annotations`);
     }
     for (const [emoji, entry] of Object.entries(entries)) {
-      if (!emoji || !isObject(entry) || !Array.isArray(entry.default) ||
-          !entry.default.every(term => typeof term === 'string') ||
+      // CLDR also contains name-only entries, such as currency symbols.
+      if (!emoji || !isObject(entry) ||
+          (entry.default === undefined && entry.tts === undefined) ||
+          (entry.default !== undefined && (!Array.isArray(entry.default) || !entry.default.every(term => typeof term === 'string'))) ||
           (entry.tts !== undefined && (!Array.isArray(entry.tts) || !entry.tts.every(term => typeof term === 'string')))) {
         throw new Error(`Invalid CLDR ${root} entry for ${emoji}`);
       }
       const key = lookupKey(emoji);
       const terms = index.get(key) || new Set();
-      for (const term of [...entry.default, ...(entry.tts || [])]) {
+      for (const term of [...(entry.default || []), ...(entry.tts || [])]) {
         for (const word of words(term)) terms.add(word);
       }
       index.set(key, terms);

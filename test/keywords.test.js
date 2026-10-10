@@ -26,10 +26,20 @@ const annotations = document('annotations', {
   '✌': { default: ['peace sign'], tts: ['victory hand'] },
 });
 const derived = document('annotationsDerived', {
+  '¤': { tts: ['Unknown Currency'] },
   '👍🏽': { default: ['medium-only'], tts: ['thumbs up: medium skin tone'] },
   '👩‍⚕': { default: ['doctor', 'health care'], tts: ['woman health worker'] },
 });
 const entries = data => data.categories[0].subgroups[0].emojis;
+
+test('accepts CLDR name-only entries and uses their words when an emoji matches', () => {
+  const data = parseEmojiTest(source);
+  const namesOnly = structuredClone(derived);
+  namesOnly.annotationsDerived.annotations['😀'] = { tts: ['Happy smiling face'] };
+  enrichKeywords(data, annotations, namesOnly);
+  assert.deepEqual(entries(data)[3].keywords, ['grinning', 'face', 'happy', 'smiling']);
+  assert.ok(entries(data).every(entry => !entry.keywords.includes('currency')));
+});
 
 test('CLDR enriches names, phrases, selectors and derived sequences without crossing tone boundaries', () => {
   const data = parseEmojiTest(source);
@@ -59,6 +69,10 @@ test('CLDR enriches names, phrases, selectors and derived sequences without cros
 
 test('rejects malformed CLDR before changing the parsed dataset', () => {
   for (const bad of [null, {}, document('annotationsDerived', {}),
+    document('annotationsDerived', { '¤': {} }),
+    document('annotationsDerived', { '¤': { tts: 'Unknown Currency' } }),
+    document('annotationsDerived', { '¤': { tts: [42] } }),
+    document('annotationsDerived', { '¤': { default: null, tts: ['Unknown Currency'] } }),
     document('annotationsDerived', { '👍': { default: 'approval' } }),
     document('annotationsDerived', { '👍': { default: [42] } }),
     document('annotationsDerived', { '👍': { default: [], tts: 'thumb' } }),
