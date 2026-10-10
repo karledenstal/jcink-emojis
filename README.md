@@ -1,6 +1,6 @@
 # jcink-emojis
 
-Generate categorized emoji JSON from Unicode's [emoji-test.txt](https://unicode.org/Public/emoji/latest/emoji-test.txt). Requires Node.js 22 or newer; no dependencies to install.
+Generate categorized emoji JSON from Unicode's [emoji-test.txt](https://unicode.org/Public/emoji/latest/emoji-test.txt), enriched with English CLDR search keywords. Requires Node.js 22 or newer; no dependencies to install.
 
 ```sh
 npm run generate
@@ -53,7 +53,13 @@ Normalization and tone lookup preparation happen once during initialization. Eac
 
 ## Generated dataset
 
-Generation fetches the latest dataset and writes compact UTF-8 `emojis.json` in the project directory, with no indentation or trailing newline. The reported Unicode version is included in the output. Downloads time out after 30 seconds; download or parsing failures exit with an error and leave existing output intact. Successful runs replace the output using a temporary file. The examples below are formatted only for readability.
+Generation fetches the latest emoji dataset and both CLDR annotation files concurrently, then writes compact UTF-8 `emojis.json` in the project directory, with no indentation or trailing newline. The reported Unicode emoji version is included in the output. Each download times out after 30 seconds; download, parsing, or annotation-validation failures exit with an error and leave existing output intact. Successful runs replace the output using a temporary file. The examples below are abbreviated and formatted only for readability.
+
+Keywords come from Unicode's English [CLDR annotations](https://github.com/unicode-org/cldr-json/tree/main/cldr-json/cldr-annotations-full/annotations/en) and [derived annotations](https://github.com/unicode-org/cldr-json/tree/main/cldr-json/cldr-annotations-derived-full/annotationsDerived/en), fetched from the `main` branch. The generator merges name-derived words with words from CLDR search annotations (`default`) and short names (`tts`), normalizes with NFKC, lowercases, splits punctuation/whitespace, and deduplicates in stable order. Display names remain those in `emoji-test.txt`.
+
+Matching ignores the emoji presentation selector U+FE0F but preserves skin-tone modifiers and joiners. Variants receive their own annotations and inherit the enriched base keywords; variant-specific words are not added to the base. An emoji without annotations retains its name-derived keywords. CLDR and emoji releases may differ, so not every new emoji will have annotations immediately. There is no custom dictionary or extra runtime dependency.
+
+Run `npm run generate` and upload the regenerated `emojis.json` to replace the old file. The existing browser library automatically searches the richer keywords; it needs no update or additional requests. Reload pages that have already initialized to load the new data, and refresh any hosting cache if necessary. Additional keywords increase the JSON size; output remains compact.
 
 ```json
 {
@@ -82,7 +88,7 @@ Generation fetches the latest dataset and writes compact UTF-8 `emojis.json` in 
 }
 ```
 
-Categories and subgroups follow the source order. Only fully qualified entries are included, including skin-tone and multi-code-point sequences. Alternative presentation forms, standalone components, and empty groups are omitted. Names are preserved from Unicode; keywords are lowercase, deduplicated words from those names, split on whitespace and punctuation. These are not CLDR search annotations or synonyms.
+Categories and subgroups follow the source order. Only fully qualified entries are included, including skin-tone and multi-code-point sequences. Alternative presentation forms, standalone components, and empty groups are omitted. Names are preserved from Unicode; generated keywords combine name-derived words and CLDR annotations as described above.
 
 Each subgroup's `emojis` array contains default entries with their skin-tone variants nested under `variants`. Variants are stored once, not repeated in the subgroup list. Defaults and variants preserve source order within their respective arrays. This changes the earlier flat layout: scripts that need every sequence must flatten `[entry, ...entry.variants]`.
 
@@ -146,6 +152,8 @@ const { parseEmojiTest } = require('./index');
 const data = parseEmojiTest(text);
 ```
 
+`parseEmojiTest(text)` still produces name-derived keywords without network access. The generator applies the separate `enrichKeywords(data, annotations, derived)` function from `keywords.js` afterward. This function validates both English CLDR documents, enriches the parsed dataset in place, and returns it.
+
 The latest URL may change over time; the output records the source's version rather than pinning a release. The example above is illustrative.
 
-Unicode data is © Unicode, Inc. and subject to [Unicode's terms of use](https://www.unicode.org/terms_of_use.html) and [Unicode data license](https://www.unicode.org/license.txt). Preserve applicable Unicode attribution when redistributing the generated dataset. The package's ISC license does not replace the upstream data license.
+Unicode emoji and CLDR data are © Unicode, Inc. and subject to [Unicode's terms of use](https://www.unicode.org/terms_of_use.html) and [Unicode data license](https://www.unicode.org/license.txt). Preserve applicable Unicode attribution when redistributing the generated dataset. The package's ISC license does not replace the upstream data license.

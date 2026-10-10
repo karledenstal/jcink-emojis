@@ -122,9 +122,10 @@ test('generator writes JSON and preserves existing output on download or parse f
     assert.equal(await readFile(outputPath, 'utf8'), 'existing output');
   }
   await generate({ outputPath, fetchImpl: async (url, options) => {
-    assert.equal(url, 'https://unicode.org/Public/emoji/latest/emoji-test.txt');
     assert.ok(options.signal instanceof AbortSignal);
-    return new Response(fixture);
+    if (url === 'https://unicode.org/Public/emoji/latest/emoji-test.txt') return new Response(fixture);
+    const root = url.includes('annotationsDerived') ? 'annotationsDerived' : 'annotations';
+    return Response.json({ [root]: { identity: { language: 'en' }, annotations: { '😀': { default: ['grinning', 'face'] } } } });
   } });
   const output = await readFile(outputPath, 'utf8');
   assert.deepEqual(JSON.parse(output), parseEmojiTest(fixture));
